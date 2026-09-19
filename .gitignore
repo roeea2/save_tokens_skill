@@ -1,0 +1,16 @@
+# local working files
+art.txt
+*.log
+.DS_Store
+
+# never commit local session data, settings, or media
+.claude/settings.local.json
+.claude/projects/
+*.jsonl
+*.env
+.env*
+*.png
+*.jpg
+*.jpeg
+*.mp4
+*.mov
