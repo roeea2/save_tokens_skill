@@ -21,6 +21,14 @@ Two jobs:
 The skill itself is built to be cheap: this file is the whole runtime contract.
 Load a reference only when the task actually calls for it.
 
+**Paths.** `references/` and `scripts/` are relative to this skill's own
+directory, wherever it is installed. To run a script without assuming an install
+location, resolve the directory first:
+
+```bash
+SKILL_DIR=$(ls -d .claude/skills/save-tokens ~/.claude/skills/save-tokens 2>/dev/null | head -1)
+```
+
 ## 1. Default discipline (apply without being asked)
 
 These are the rules Claude controls directly. They cost nothing to follow.
@@ -52,7 +60,8 @@ exists, write it and say so before anything else.
 
 Procedure:
 
-1. Run `scripts/handover.sh` (optionally with a target directory) to collect
+1. Run `"$SKILL_DIR/scripts/handover.sh"` (optionally with a target directory)
+   to collect
    objective state: git branch, status, recent commits, changed files.
 2. Read `references/handover.md` for the template and the rules about what to
    keep and what to drop.
@@ -88,14 +97,17 @@ shapes and warns about the read-modify-write on an existing config.
 
 ## 5. Auditing what actually burned
 
-`python3 scripts/token_audit.py` reads the local session logs under
+`token_audit.py` reads the local session logs under
 `~/.claude/projects/` and ranks sessions, tools, and individual tool results by
 context cost.
 
 ```bash
-python3 scripts/token_audit.py                 # all projects, recent sessions
-python3 scripts/token_audit.py --project .     # this project only
-python3 scripts/token_audit.py --top 15        # widen the offender list
+AUDIT="$SKILL_DIR/scripts/token_audit.py"
+
+python3 "$AUDIT"                  # all projects, recent sessions
+python3 "$AUDIT" --project .      # this project only
+python3 "$AUDIT" --days 1         # only today
+python3 "$AUDIT" --top 15         # widen the offender list
 ```
 
 Run it before prescribing changes. The top offenders are usually specific and

@@ -25,8 +25,15 @@ CHARS_PER_TOKEN = 4  # rough, good enough for ranking
 
 
 def project_slug(path: Path) -> str:
-    """Claude Code encodes a project path as its slug directory name."""
-    return "-" + str(path.resolve()).strip("/").replace("/", "-").replace("_", "-").replace(" ", "-")
+    """Claude Code encodes a project path as a slug directory name.
+
+    Separators, spaces, underscores and dots all collapse to a hyphen, so
+    /path/to/my_app.v2 becomes -path-to-my-app-v2.
+    """
+    slug = str(path.resolve()).strip("/")
+    for ch in ("/", "\\", " ", "_", "."):
+        slug = slug.replace(ch, "-")
+    return "-" + slug
 
 
 def human(n: int) -> str:
@@ -139,13 +146,18 @@ def main() -> int:
         return 1
 
     if args.project:
-        slug = project_slug(Path(args.project))
-        dirs = [d for d in root.iterdir() if d.is_dir() and d.name == slug]
+        target = Path(args.project)
+        slug = project_slug(target)
+        all_dirs = [d for d in root.iterdir() if d.is_dir()]
+        dirs = [d for d in all_dirs if d.name == slug]
+        if not dirs:  # case differences between the path and the slug
+            dirs = [d for d in all_dirs if d.name.lower() == slug.lower()]
+        if not dirs:  # last resort: match on the project folder name alone
+            leaf = project_slug(target).rsplit("-", 1)[-1].lower()
+            dirs = [d for d in all_dirs if leaf and d.name.lower().endswith("-" + leaf)]
         if not dirs:
-            cand = slug.lower()
-            dirs = [d for d in root.iterdir() if d.is_dir() and d.name.lower() == cand]
-        if not dirs:
-            print(f"No logs for project slug {slug}", file=sys.stderr)
+            print(f"No logs for project slug {slug}\n"
+                  f"Available slugs live in {root}", file=sys.stderr)
             return 1
         files = [f for d in dirs for f in d.glob("*.jsonl")]
     else:

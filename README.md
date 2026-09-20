@@ -68,29 +68,58 @@ runs.
 
 ## Install
 
-The skill is project-scoped by design: it lives in the repo, it travels with the
-repo, and it costs nothing in projects that do not use it.
+Nothing in the skill is tied to a machine, an account, a language, or a project
+layout. It reads only local Claude Code session logs and the repo it is run in,
+so any Claude Code user can install it into their own client.
+
+**Requirements:** Claude Code, `python3` (3.8+, for the audit script), `bash`
+and `git` (for the handover script). macOS and Linux natively; on Windows use
+WSL or Git Bash. No network access, no API key, no dependencies to install.
+
+### One command
 
 ```bash
-# into an existing project
-git clone https://github.com/<owner>/save_tokens_skill.git /tmp/sts
-mkdir -p .claude/skills
-cp -r /tmp/sts/.claude/skills/save-tokens .claude/skills/
+git clone https://github.com/roeea2/save_tokens_skill.git
+./save_tokens_skill/install.sh              # into the current project
+./save_tokens_skill/install.sh /path/to/repo  # into another project
+./save_tokens_skill/install.sh --global     # into ~/.claude/skills, all projects
 ```
 
-Or clone this repo and work inside it directly. Claude Code picks up
-`.claude/skills/*/SKILL.md` automatically.
+The installer copies files and nothing else. It does not touch settings, hooks,
+or existing skills, and it refuses to overwrite an existing install unless you
+pass `--force`.
 
-Verify:
+### Or copy it by hand
+
+```bash
+mkdir -p .claude/skills
+cp -r save_tokens_skill/.claude/skills/save-tokens .claude/skills/
+```
+
+Claude Code picks up `.claude/skills/*/SKILL.md` automatically. Cloning this
+repo and working inside it also just works.
+
+### Project scope or global
+
+| Scope | Path | Use when |
+|---|---|---|
+| Project | `<repo>/.claude/skills/save-tokens/` | The skill should travel with the repo, so teammates and customers get it on clone |
+| Global | `~/.claude/skills/save-tokens/` | One person wants it in every project on their machine |
+
+Project scope is the default because token discipline is mostly a property of a
+repo's size and layout, and because committing it means a team shares one
+standard. Both work identically; the skill resolves its own script paths either
+way.
+
+### Verify
 
 ```bash
 ls .claude/skills/save-tokens/SKILL.md
 python3 .claude/skills/save-tokens/scripts/token_audit.py --project . --top 5
 ```
 
-To make it global instead, copy the same folder to `~/.claude/skills/`. Project
-scope is recommended: token discipline is usually a property of a repo's size
-and layout.
+Then start Claude Code and ask for a token audit, or ask for a handover before
+clearing. `/save-tokens` invokes it directly.
 
 ## Use
 
@@ -165,6 +194,7 @@ Plus the rule that is not on the list: write a handover before every clear.
 ## Layout
 
 ```
+install.sh                    # copy the skill into a project or ~/.claude
 .claude/skills/save-tokens/
 ├── SKILL.md                  # the runtime contract, loaded on invoke
 ├── references/
